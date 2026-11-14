@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2019-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,14 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -35,9 +37,11 @@ import org.reactivestreams.Subscription;
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.test.ParameterizedTestWithName;
+import reactor.test.StepVerifier;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 public class ContextLossDetectionTest {
@@ -165,6 +169,27 @@ public class ContextLossDetectionTest {
 					}
 				})
 				.withMessage("Context loss after applying " + fn + "'s badTransformer");
+	}
+
+	@Test
+	public void monoTransformsDoNotCancelSource() {
+		AtomicInteger cancelled = new AtomicInteger();
+		Mono<String> source = Mono.just("foo").doOnCancel(cancelled::incrementAndGet);
+
+		StepVerifier.create(source.transform(mono -> mono))
+		            .expectNext("foo")
+		            .verifyComplete();
+		assertThat(cancelled).as("Mono#transform").hasValue(0);
+
+		StepVerifier.create(source.transformDeferred(mono -> mono))
+		            .expectNext("foo")
+		            .verifyComplete();
+		assertThat(cancelled).as("Mono#transformDeferred").hasValue(0);
+
+		StepVerifier.create(source.transformDeferredContextual((mono, ctx) -> mono))
+		            .expectNext("foo")
+		            .verifyComplete();
+		assertThat(cancelled).as("Mono#transformDeferredContextual").hasValue(0);
 	}
 
 	static class LossyTransformer implements Function<CorePublisher<ContextView>, Publisher<ContextView>> {
