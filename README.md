@@ -29,8 +29,8 @@ dependencies {
     testCompile "io.projectreactor:reactor-test:3.8.8"
 
     // Alternatively, use the following for latest snapshot artifacts in this line
-    // compile "io.projectreactor:reactor-core:3.8.9-SNAPSHOT"
-    // testCompile "io.projectreactor:reactor-test:3.8.9-SNAPSHOT"
+    // compile "io.projectreactor:reactor-core:3.8.10-SNAPSHOT"
+    // testCompile "io.projectreactor:reactor-test:3.8.10-SNAPSHOT"
 
     // Optionally, use `reactor-tools` to help debugging reactor code
     // implementation "io.projectreactor:reactor-tools:3.8.8"
