@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2019-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package reactor.core.scheduler;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import org.assertj.core.api.Assertions;
@@ -27,7 +28,6 @@ import org.junit.jupiter.api.Timeout;
 import reactor.blockhound.BlockHound;
 import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
-import reactor.test.util.RaceTestUtils;
 
 @Timeout(5)
 public class ReactorBlockHoundIntegrationTest {
@@ -74,47 +74,70 @@ public class ReactorBlockHoundIntegrationTest {
 	}
 
 	@Test
-	public void shouldNotReportSchedulerScheduledFutureTask() {
-		for (int i = 0; i < 10_000; i++) {
-			Scheduler taskScheduler = Schedulers.newSingle("foo");
-			try {
-				Runnable dummyRunnable = () -> {
-				};
-
-				for (int j = 0; j < 257; j++) {
-					taskScheduler.schedule(dummyRunnable, j + 1, TimeUnit.MILLISECONDS);
-				}
-				Disposable disposable = taskScheduler.schedule(dummyRunnable, 1, TimeUnit.SECONDS);
-
-				RaceTestUtils.race(Schedulers.parallel(), disposable::dispose);
-			}
-			finally {
-				taskScheduler.dispose();
-			}
+	public void shouldNotReportSchedulerScheduledFutureTask() throws InterruptedException {
+		Scheduler scheduler = Schedulers.newSingle("foo");
+		try {
+			disposeOnNonBlockingThreadWhileQueueLockIsHeld(scheduler::schedule);
+		}
+		finally {
+			scheduler.dispose();
 		}
 	}
 
 	@Test
-	public void shouldNotReportWorkerScheduledFutureTask() {
-		for (int i = 0; i < 10_000; i++) {
-			Scheduler scheduler = Schedulers.newSingle("foo");
-			Scheduler.Worker worker = scheduler.createWorker();
+	public void shouldNotReportWorkerScheduledFutureTask() throws InterruptedException {
+		Scheduler scheduler = Schedulers.newSingle("foo");
+		Scheduler.Worker worker = scheduler.createWorker();
+		try {
+			disposeOnNonBlockingThreadWhileQueueLockIsHeld(worker::schedule);
+		}
+		finally {
+			worker.dispose();
+			scheduler.dispose();
+		}
+	}
 
-			try {
-				Runnable dummyRunnable = () -> {
-				};
+	interface DelayedScheduling {
 
-				for (int j = 0; j < 257; j++) {
-					worker.schedule(dummyRunnable, j + 1, TimeUnit.MILLISECONDS);
-				}
-				Disposable disposable = worker.schedule(dummyRunnable, 1, TimeUnit.SECONDS);
+		Disposable schedule(Runnable task, long delay, TimeUnit unit);
+	}
 
-				RaceTestUtils.race(Schedulers.parallel(), disposable::dispose);
+	// Disposing a delayed task removes it from the executor's DelayedWorkQueue,
+	// which takes the queue's lock. When another thread holds that lock, the
+	// disposing thread parks, and BlockHound reports the park unless it happens
+	// inside an allowed method (SchedulerTask#dispose, WorkerTask#dispose).
+	void disposeOnNonBlockingThreadWhileQueueLockIsHeld(DelayedScheduling scheduling) throws InterruptedException {
+		// The tasks are scheduled an hour ahead so that they never run: they only
+		// exist to be added to the queue and removed from it again.
+		Runnable neverRuns = () -> {
+		};
+
+		// Keeps the queue's lock busy from a regular thread, so that the dispose
+		// calls on the NonBlocking thread below regularly find it held and park.
+		AtomicBoolean done = new AtomicBoolean();
+		Thread lockContender = new Thread(() -> {
+			while (!done.get()) {
+				scheduling.schedule(neverRuns, 1, TimeUnit.HOURS)
+				          .dispose();
 			}
-			finally {
-				worker.dispose();
-				scheduler.dispose();
-			}
+		}, "lockContender");
+		lockContender.start();
+
+		try {
+			// Schedulers.parallel() threads are NonBlocking, so BlockHound checks
+			// every dispose call made here.
+			Mono.fromRunnable(() -> {
+				    for (int i = 0; i < 10_000; i++) {
+					    scheduling.schedule(neverRuns, 1, TimeUnit.HOURS)
+					              .dispose();
+				    }
+			    })
+			    .subscribeOn(Schedulers.parallel())
+			    .block(Duration.ofSeconds(4));
+		}
+		finally {
+			done.set(true);
+			lockContender.join();
 		}
 	}
 
