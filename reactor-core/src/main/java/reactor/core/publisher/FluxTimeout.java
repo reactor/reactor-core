@@ -124,6 +124,9 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 						IndexedCancellable.class,
 						"timeout");
 
+		/** The source has signalled a terminal event; any further element is malformed. */
+		volatile boolean done;
+
 		volatile long index;
 		@SuppressWarnings("rawtypes")
 		static final AtomicLongFieldUpdater<TimeoutMainSubscriber> INDEX =
@@ -170,12 +173,12 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 			long idx = index;
 			if (idx == Long.MIN_VALUE) {
 				s.cancel();
-				Operators.onNextDropped(t, actual.currentContext());
+				discardOrDrop(t);
 				return;
 			}
 			if (!INDEX.compareAndSet(this, idx, idx + 1)) {
 				s.cancel();
-				Operators.onNextDropped(t, actual.currentContext());
+				discardOrDrop(t);
 				return;
 			}
 
@@ -204,8 +207,26 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 			Operators.toFluxOrMono(p).subscribe(ts);
 		}
 
+		/**
+		 * An element that is not going to be emitted because this operator has been cancelled,
+		 * or because its timeout has fired, is discarded: the source is well behaved and the
+		 * element simply raced our cancellation. Only an element that follows a terminal signal
+		 * from the source is dropped, which is what the {@code onNextDropped} hook is for.
+		 */
+		void discardOrDrop(T t) {
+			Context context = actual.currentContext();
+			if (done) {
+				Operators.onNextDropped(t, context);
+			}
+			else {
+				Operators.onDiscard(t, context);
+			}
+		}
+
 		@Override
 		public void onError(Throwable t) {
+			done = true;
+
 			long idx = index;
 			if (idx == Long.MIN_VALUE) {
 				Operators.onErrorDropped(t, actual.currentContext());
@@ -223,6 +244,8 @@ final class FluxTimeout<T, U, V> extends InternalFluxOperator<T, T> {
 
 		@Override
 		public void onComplete() {
+			done = true;
+
 			long idx = index;
 			if (idx == Long.MIN_VALUE) {
 				return;
