@@ -610,6 +610,10 @@ final class FluxMergeSequential<T, R> extends InternalFluxOperator<T, R> {
 
 		void cancel() {
 			Operators.set(SUBSCRIPTION, this, Operators.cancelledSubscription());
+			Queue<R> q = queue;
+			if (q != null) {
+				Operators.onDiscardQueueWithClear(q, parent.currentContext(), null);
+			}
 		}
 
 		boolean isDone() {
