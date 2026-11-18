@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -3742,7 +3742,7 @@ public abstract class Flux<T> implements CorePublisher<T> {
 	 * @return a {@link Mono} of the collected container on complete
 	 *
 	 */
-	public final <R, A> Mono<R> collect(Collector<? super T, A, ? extends R> collector) {
+	public final <R, A extends @Nullable Object> Mono<R> collect(Collector<? super T, A, ? extends R> collector) {
 		return Mono.onAssembly(new MonoStreamCollector<>(this, collector));
 	}
 
