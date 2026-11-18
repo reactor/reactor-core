@@ -217,6 +217,7 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 				int previousState = this.state;
 
 				if (isCancelled(previousState)) {
+					connection.innerCancelled();
 					return;
 				}
 
@@ -300,10 +301,11 @@ final class FluxRefCount<T> extends Flux<T> implements Scannable, Fuseable {
 				return;
 			}
 
-			if (isMonitorSet(previousState)
-					&& STATE.compareAndSet(this, previousState, previousState | CANCELLED_FLAG)) {
-				assert connection != null : "isMonitorSet check guarantees connection is not null";
-				connection.innerCancelled();
+			if (STATE.compareAndSet(this, previousState, previousState | CANCELLED_FLAG)) {
+				if (isMonitorSet(previousState)) {
+					assert connection != null : "isMonitorSet check guarantees connection is not null";
+					connection.innerCancelled();
+				}
 			}
 		}
 
