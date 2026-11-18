@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2019-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,6 +67,19 @@ class ContextTrackingFunctionWrapper<T, V> implements Function<Publisher<T>, Cor
 		}).apply(source);
 
 		Publisher<V> result = transformer.apply(source);
+
+		// Keep a Mono result a Mono, so that `Mono.from()` doesn't enforce the Mono contract
+		// on top of it, which would cancel the source after its value
+		if (result instanceof Mono) {
+			Mono<V> monoResult = (Mono<V>) result;
+			return new Mono<V>() {
+				@Override
+				public void subscribe(CoreSubscriber<? super V> actual) {
+					Context ctx = actual.currentContext().put(key, true);
+					monoResult.subscribe(new ContextWriteSubscriber<>(actual, ctx));
+				}
+			};
+		}
 
 		// It is okay to return `CorePublisher` here since `transform` will use `from()` anyways
 		return new CorePublisher<V>() {
