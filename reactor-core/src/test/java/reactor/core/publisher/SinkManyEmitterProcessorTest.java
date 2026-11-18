@@ -923,4 +923,24 @@ class SinkManyEmitterProcessorTest {
 		            .expectTimeout(Duration.ofSeconds(1))
 		            .verify();
 	}
+
+	@Test
+	void autoCancelledSinkRejectsEmissions() {
+		// autoCancel is enabled by default — once all subscribers cancel, the sink shuts down
+		SinkManyEmitterProcessor<String> sink = new SinkManyEmitterProcessor<>(true, Queues.SMALL_BUFFER_SIZE);
+		reactor.core.Disposable subscription = sink.asFlux().subscribe(s -> {});
+		assertThat(sink.currentSubscriberCount()).isEqualTo(1);
+
+		assertThat(sink.tryEmitNext("before-cancel")).as("emit before cancel").isEqualTo(Sinks.EmitResult.OK);
+
+		subscription.dispose(); // triggers autoCancel — sink is now shut down
+		assertThat(sink.currentSubscriberCount()).as("subscriber count after cancel").isZero();
+
+		assertThat(sink.tryEmitNext("after-cancel")).as("tryEmitNext on cancelled sink should fail")
+				.isEqualTo(Sinks.EmitResult.FAIL_CANCELLED);
+		assertThat(sink.tryEmitError(new RuntimeException())).as("tryEmitError on cancelled sink should fail")
+				.isEqualTo(Sinks.EmitResult.FAIL_CANCELLED);
+		assertThat(sink.tryEmitComplete()).as("tryEmitComplete on cancelled sink should fail")
+				.isEqualTo(Sinks.EmitResult.FAIL_CANCELLED);
+	}
 }
