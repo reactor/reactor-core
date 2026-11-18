@@ -546,4 +546,59 @@ public class FluxBufferTimeoutFairBackpressureTest {
 		            .expectErrorMessage("boom")
 		            .verify();
 	}
+
+	// see https://github.com/reactor/reactor-core/issues/4185
+	@Test
+	public void largeBatchSizeDoesNotOverflowPrefetch() {
+		CoreSubscriber<List<Integer>> actual = new LambdaSubscriber<>(null, e -> {}, null, null);
+		Scheduler.Worker worker = Schedulers.immediate().createWorker();
+
+		try {
+			int overflowBatchSize = (Integer.MAX_VALUE >> 2) + 1;
+			FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Integer, List<Integer>> atBoundary =
+					new FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Integer, List<Integer>>(
+							actual, overflowBatchSize, 1000, TimeUnit.MILLISECONDS,
+							worker, ArrayList::new, null
+					);
+			assertThat(atBoundary.scan(Scannable.Attr.CAPACITY)).isEqualTo(Integer.MAX_VALUE);
+
+			FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Integer, List<Integer>> unbounded =
+					new FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Integer, List<Integer>>(
+							actual, Integer.MAX_VALUE, 1000, TimeUnit.MILLISECONDS,
+							worker, ArrayList::new, null
+					);
+			assertThat(unbounded.scan(Scannable.Attr.CAPACITY)).isEqualTo(Integer.MAX_VALUE);
+
+			int safeBatchSize = Integer.MAX_VALUE >> 2;
+			FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Integer, List<Integer>> safe =
+					new FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Integer, List<Integer>>(
+							actual, safeBatchSize, 1000, TimeUnit.MILLISECONDS,
+							worker, ArrayList::new, null
+					);
+			assertThat(safe.scan(Scannable.Attr.CAPACITY)).isEqualTo(safeBatchSize << 2);
+		}
+		finally {
+			worker.dispose();
+		}
+	}
+
+	// see https://github.com/reactor/reactor-core/issues/4185
+	@Test
+	public void bufferTimeoutWithIntegerMaxSizeDoesNotHang() {
+		AtomicLong upstreamRequested = new AtomicLong();
+		VirtualTimeScheduler scheduler = VirtualTimeScheduler.create();
+
+		StepVerifier.withVirtualTime(
+				() -> Flux.just(1, 2, 3)
+				          .doOnRequest(upstreamRequested::addAndGet)
+				          .bufferTimeout(Integer.MAX_VALUE, Duration.ofMillis(100), scheduler, true),
+				() -> scheduler,
+				1
+		)
+		            .expectSubscription()
+		            .then(() -> assertThat(upstreamRequested.get()).isGreaterThan(0))
+		            .thenAwait(Duration.ofMillis(100))
+		            .assertNext(list -> assertThat(list).containsExactly(1, 2, 3))
+		            .verifyComplete();
+	}
 }
