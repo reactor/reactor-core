@@ -382,21 +382,21 @@ class FluxFilterWhen<T> extends InternalFluxOperator<T, T> {
 
 		void innerResult(Boolean item) {
 			innerResult = item;
-			state = STATE_RESULT;
 			clearCurrent();
+			state = STATE_RESULT;
 			drain();
 		}
 
 		void innerError(Throwable ex) {
 			Exceptions.addThrowable(ERROR, this, ex);
-			state = STATE_RESULT;
 			clearCurrent();
+			state = STATE_RESULT;
 			drain();
 		}
 
 		void innerComplete() {
-			state = STATE_RESULT;
 			clearCurrent();
+			state = STATE_RESULT;
 			drain();
 		}
 
