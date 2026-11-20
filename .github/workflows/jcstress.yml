@@ -41,9 +41,5 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 21
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c
-        with:
-          cache-disabled: true
       - name: Run jcstress
         run: ./gradlew :reactor-core:jcstress --no-daemon
