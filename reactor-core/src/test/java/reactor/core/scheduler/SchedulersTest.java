@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1146,6 +1146,18 @@ public class SchedulersTest {
 		EmptyScheduler.EmptyWorker w = s.createWorker();
 		w.dispose();
 		assertThat(w.disposeCalled).isTrue();
+	}
+
+	@Test
+	public void transitionAwaitPoolUsesDaemonThreads() throws InterruptedException {
+		AtomicBoolean daemon = new AtomicBoolean();
+		CountDownLatch latch = new CountDownLatch(1);
+		SchedulerState.DisposeAwaiterRunnable.TRANSITION_AWAIT_POOL.submit(() -> {
+			daemon.set(Thread.currentThread().isDaemon());
+			latch.countDown();
+		});
+		assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+		assertThat(daemon.get()).as("transition await pool threads should be daemon").isTrue();
 	}
 
 	@Test

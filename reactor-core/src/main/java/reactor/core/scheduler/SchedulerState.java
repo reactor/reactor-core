@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2022-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package reactor.core.scheduler;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
@@ -66,6 +67,7 @@ final class SchedulerState<T> {
 
 		static {
 			ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(0);
+			executor.setThreadFactory(new ReactorThreadFactory("transition-await", new AtomicLong(), true, false, null));
 			executor.setKeepAliveTime(10, TimeUnit.SECONDS);
 			executor.allowCoreThreadTimeOut(true);
 			executor.setMaximumPoolSize(Schedulers.DEFAULT_POOL_SIZE);
