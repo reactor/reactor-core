@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -125,22 +125,32 @@ public class FluxRefCountTest {
 		final AtomicInteger signalCount1 = new AtomicInteger();
 		final AtomicInteger signalCount2 = new AtomicInteger();
 
+		// RaceTestUtils.race gives up after its timeout without stopping the runnables.
+		// The flag stops them, so they don't keep assembling operators while the next
+		// test in this JVM runs.
+		final AtomicBoolean stop = new AtomicBoolean();
+
 		final Runnable subscriber1 = () -> {
-			for (int i = 0; i < 100_000; i++) {
+			for (int i = 0; i < 100_000 && !stop.get(); i++) {
 				testFlux.next()
 						.doOnNext(signal -> signalCount1.incrementAndGet())
 						.subscribe();
 			}
 		};
 		final Runnable subscriber2 = () -> {
-			for (int i = 0; i < 100_000; i++) {
+			for (int i = 0; i < 100_000 && !stop.get(); i++) {
 				testFlux.next()
 						.doOnNext(signal -> signalCount2.incrementAndGet())
 						.subscribe();
 			}
 		};
 
-		RaceTestUtils.race(subscriber1, subscriber2);
+		try {
+			RaceTestUtils.race(10, Schedulers.boundedElastic(), subscriber1, subscriber2);
+		}
+		finally {
+			stop.set(true);
+		}
 		assertThat(signalCount1).as("signalCount1")
 								.hasValue(100_000);
 		assertThat(signalCount2).as("signalCount2")
