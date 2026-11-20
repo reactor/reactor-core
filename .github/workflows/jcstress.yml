@@ -1,4 +1,4 @@
-name: Full Check
+name: JCStress
 
 on:
   workflow_dispatch:
@@ -6,20 +6,13 @@ on:
     - cron: "0 14 * * 0"
 permissions: {}
 jobs:
-  run-tests:
+  jcstress:
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         branch: [ 3.8.x, main ]
-        test-type:
-          - type: core
-            arguments: ":reactor-core:test --no-daemon"
-          - type: other # includes java21Test and java9Test for 3.6+/ java11Test for 3.7+
-            arguments: "check -x :reactor-core:test -x spotlessCheck -x :reactor-core:jcstress --no-daemon"
-          - type: jcstress
-            arguments: ":reactor-core:jcstress -Pjcstress.mode=quick --no-daemon"
-    name: Test on ${{ matrix.branch }} - ${{ matrix.test-type.type }} tests
+    name: jcstress on ${{ matrix.branch }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # tag=v5
@@ -48,9 +41,5 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 21
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c
-        with:
-          cache-provider: basic
-      - name: Run Gradle Tests
-        run: ./gradlew ${{ matrix.test-type.arguments }}
+      - name: Run jcstress
+        run: ./gradlew :reactor-core:jcstress --no-daemon

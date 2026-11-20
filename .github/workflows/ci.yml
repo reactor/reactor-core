@@ -43,6 +43,9 @@ jobs:
       - name: api compatibility
         if: always()
         run: ./gradlew japicmp
+      - name: nohttp
+        if: always()
+        run: ./gradlew checkstyleNohttp
       - name: how to fix
         if: failure()
         # the foreground (38;5) color code 208 is orange. we also have bold, white bg (38;5;0;48;5;255m), white fg on black bg...
@@ -70,8 +73,8 @@ jobs:
             arguments: ":reactor-core:java21Test --no-daemon"
           - type: core-java11
             arguments: ":reactor-core:java11Test --no-daemon"
-          - type: other
-            arguments: "check -x :reactor-core:test -x :reactor-core:java21Test -x :reactor-core:java11Test -x spotlessCheck -Pjcstress.mode=sanity --no-daemon"
+          - type: integration
+            arguments: "integrationTests --no-daemon"
     name: ${{ matrix.test-type.type }} tests
     needs: preliminary
     steps:
