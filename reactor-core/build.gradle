@@ -359,10 +359,12 @@ jcstress {
 	heapPerFork = 512
 }
 
-// inherit basic test task + common configuration in root
-// always depend on withMicrometerTest, blockHoundTest and tckTest, skip loops when not releasing
-// note that this way the tasks can be run individually
-check {
+// The suites that run reactor-core with other libraries or agents. Each module with such
+// tests defines a task of this name, so `./gradlew integrationTests` runs them all.
+// Loops are only included when releasing.
+tasks.register('integrationTests') {
+	group = 'verification'
+	description = 'Runs the TCK, BlockHound, Micrometer and context-propagation test suites'
 	dependsOn withContextPropagation102Test
 	dependsOn withMicrometerTest
 	dependsOn blockHoundTest
@@ -370,7 +372,12 @@ check {
 	if (!version.endsWith('-SNAPSHOT') && !version.contains('-SNAPSHOT-')) { //neither classic nor customized snapshots
 		dependsOn loops
 	}
-	dependsOn tasks.jcstress
+}
+
+// inherit basic test task + common configuration in root
+// the jcstress suite takes hours and is not part of check, run :reactor-core:jcstress explicitly
+check {
+	dependsOn integrationTests
 }
 
 // TODO all java9 / stubs / java-specific stuff should go in a convention plugin ?

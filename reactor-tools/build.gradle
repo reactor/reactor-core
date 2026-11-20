@@ -246,6 +246,12 @@ project.tasks.buildPluginTest.dependsOn(generateMockGradle)
 project.tasks.buildPluginTest.dependsOn(rootProject.findProject("reactor-core").tasks.jar)
 project.tasks.check.dependsOn(buildPluginTest)
 
+tasks.register('integrationTests') {
+    group = 'verification'
+    description = 'Runs the unit, shaded jar, java agent and build plugin tests'
+    dependsOn check
+}
+
 tasks.withType(Test).matching { !(it.name in testing.suites.names) }.configureEach {
     useJUnitPlatform()
 }
