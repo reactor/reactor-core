@@ -85,6 +85,12 @@ tasks.withType(Test).all {
   useJUnitPlatform()
 }
 
+tasks.register('integrationTests') {
+  group = 'verification'
+  description = 'Runs the module tests'
+  dependsOn test
+}
+
 // javadoc is configured in gradle/javadoc.gradle
 
 jar {

@@ -12,12 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         branch: [ 3.8.x, main ]
-        test-type:
-          - type: core
-            arguments: ":reactor-core:test --no-daemon -DuseSnapshotMicrometerVersion=true"
-          - type: other # includes java21Test and java11Test for 3.7+
-            arguments: "check -x :reactor-core:test -x spotlessCheck -x :reactor-core:jcstress -DuseSnapshotMicrometerVersion=true --no-daemon"
-    name: Test on ${{ matrix.branch }} - ${{ matrix.test-type.type }} tests
+    name: Micrometer snapshot tests on ${{ matrix.branch }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # tag=v5
@@ -51,4 +46,4 @@ jobs:
         with:
           cache-provider: basic
       - name: Run Gradle Tests
-        run: ./gradlew ${{ matrix.test-type.arguments }}
+        run: ./gradlew :reactor-core:withMicrometerTest :reactor-core-micrometer:test -DuseSnapshotMicrometerVersion=true --no-daemon

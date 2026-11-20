@@ -141,3 +141,9 @@ tasks.withType(Test).all {
 }
 
 check.dependsOn japicmp
+
+tasks.register('integrationTests') {
+	group = 'verification'
+	description = 'Runs the module tests'
+	dependsOn test
+}
