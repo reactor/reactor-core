@@ -61,6 +61,7 @@ final class FluxStream<T> extends Flux<T> implements Fuseable, SourceProducer<T>
 			sp = spliterator; //this is the default for BaseStream#iterator() anyway
 		}
 		catch (Throwable e) {
+			stream.close();
 			Operators.error(actual, Operators.onOperatorError(e, actual.currentContext()));
 			return;
 		}
