@@ -168,14 +168,19 @@ final class SinkManyBestEffort<T> extends Flux<T>
 	@Override
 	public EmitResult tryEmitError(Throwable error) {
 		Objects.requireNonNull(error, "tryEmitError(null) is forbidden");
+
+		if (subscribers == TERMINATED) {
+			return EmitResult.FAIL_TERMINATED;
+		}
+
+		this.error = error;
+
 		@SuppressWarnings("unchecked")
 		DirectInner<T>[] subs = SUBSCRIBERS.getAndSet(this, TERMINATED);
 
 		if (subs == TERMINATED) {
 			return EmitResult.FAIL_TERMINATED;
 		}
-
-		this.error = error;
 
 		for (DirectInner<?> s : subs) {
 			s.emitError(error);
