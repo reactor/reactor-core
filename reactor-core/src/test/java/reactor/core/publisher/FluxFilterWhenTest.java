@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,13 +21,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
+import reactor.test.subscriber.AssertSubscriber;
+import reactor.test.util.RaceTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -477,6 +481,25 @@ public class FluxFilterWhenTest {
         test.cancel();
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
+
+	//see https://github.com/reactor/reactor-core/issues/4459
+	@Test
+	@Tag("slow")
+	public void innerResultRacingWithRequestDoesNotDropElements() {
+		for (int i = 0; i < 100_000; i++) {
+			TestPublisher<Boolean> firstPredicate = TestPublisher.create();
+			Publisher<Boolean> alwaysTrue = Mono.just(true).hide();
+			AssertSubscriber<Integer> ts = AssertSubscriber.create(1);
+
+			Flux.range(0, 2)
+			    .filterWhen(v -> v == 0 ? firstPredicate : alwaysTrue)
+			    .subscribe(ts);
+			RaceTestUtils.race(() -> firstPredicate.next(true), () -> ts.request(1));
+
+			ts.assertValues(0, 1)
+			  .assertComplete();
+		}
+	}
 
 	@Test
 	public void filterAllOut() {
