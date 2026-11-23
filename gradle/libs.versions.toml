@@ -2,7 +2,7 @@
 # Baselines, should be updated on every release
 baseline-core-api = "3.8.9"
 baselinePerfCore = "3.8.9"
-baselinePerfExtra = "3.6.2"
+baselinePerfExtra = "3.7.0"
 
 # Other shared versions
 #note that some micrometer artifacts like context-propagation has a different version directly set in libraries below
