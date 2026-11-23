@@ -314,10 +314,16 @@ test {
 }
 
 java11Test {
+  // same selection as the test task, the *Loop stress tests only run in the loops task
+  include '**/*Tests.*'
+  include '**/*Test.*'
   maxParallelForks = Math.max(Runtime.runtime.availableProcessors() - 1, 1)
 }
 
 java21Test {
+  // same selection as the test task, the *Loop stress tests only run in the loops task
+  include '**/*Tests.*'
+  include '**/*Test.*'
   maxParallelForks = Math.max(Runtime.runtime.availableProcessors() - 1, 1)
   println("Available number of processors is " + Runtime.getRuntime().availableProcessors())
   if (Runtime.getRuntime().availableProcessors() <= 2) {

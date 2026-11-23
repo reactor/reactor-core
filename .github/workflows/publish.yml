@@ -19,13 +19,13 @@ jobs:
       matrix:
         test-type:
           - type: core
-            arguments: ":reactor-core:test --no-daemon"
+            arguments: ":reactor-core:test"
           - type: core-java21
-            arguments: ":reactor-core:java21Test --no-daemon"
+            arguments: ":reactor-core:java21Test"
           - type: integration
-            arguments: "integrationTests --no-daemon"
+            arguments: "integrationTests"
           - type: static
-            arguments: "japicmp checkstyleNohttp --no-daemon"
+            arguments: "japicmp checkstyleNohttp"
     name: prepare - ${{ matrix.test-type.type }} checks
     outputs:
       versionType: ${{ steps.version.outputs.versionType }}
@@ -74,12 +74,14 @@ jobs:
       #we only run the qualifyVersionGha task so that no other console printing can hijack this step's output
       #output: versionType, fullVersion
       #fails if versionType is BAD, which interrupts the workflow
-      run: ./gradlew qualifyVersionGha
+      run: ./gradlew qualifyVersionGha --no-build-cache
     - name: run checks
       id: checks
       env:
         DEVELOCITY_ACCESS_KEY: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
-      run: ./gradlew ${{ matrix.test-type.arguments }}
+        # milestones and releases are built from scratch, without reusing cached task outputs
+        BUILD_CACHE_FLAG: ${{ steps.version.outputs.versionType == 'SNAPSHOT' && '--build-cache' || '--no-build-cache' }}
+      run: ./gradlew ${{ matrix.test-type.arguments }} "$BUILD_CACHE_FLAG"
 
   #deploy the snapshot artifacts to Artifactory
   deploySnapshot:
@@ -90,12 +92,6 @@ jobs:
     environment: snapshots
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # tag=v5
-    - name: Set up Ruby for asciidoctor-pdf
-      uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # tag=v1
-      with:
-        ruby-version: 3.3.0
-    - name: Install asciidoctor-pdf / rouge
-      run: gem install asciidoctor-pdf rouge
     - name: Setup JDK 8
       uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # tag=v6.3.0
       with:
@@ -119,6 +115,10 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: 21
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c
+      with:
+        cache-provider: basic
     - name: configure gradle properties
       run: |
         mkdir -p ${GRADLE_USER_HOME:-$HOME/.gradle}
@@ -129,7 +129,7 @@ jobs:
         ORG_GRADLE_PROJECT_artifactory_publish_username: ${{secrets.ARTIFACTORY_SNAPSHOT_USERNAME}}
         ORG_GRADLE_PROJECT_artifactory_publish_password: ${{secrets.ARTIFACTORY_PASSWORD}}
       run: |
-          ./gradlew -Dorg.gradle.parallel=false assemble artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io -Partifactory_publish_repoKey=libs-snapshot-local
+          ./gradlew artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io -Partifactory_publish_repoKey=libs-snapshot-local
 
   #sign the milestone artifacts and deploy them to Artifactory
   deployMilestone:
@@ -183,7 +183,7 @@ jobs:
         ORG_GRADLE_PROJECT_sonatypeUsername: ${{secrets.SONATYPE_USERNAME}}
         ORG_GRADLE_PROJECT_sonatypePassword: ${{secrets.SONATYPE_PASSWORD}}
       run: |
-          ./gradlew -Dorg.gradle.parallel=false assemble sign artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io -Partifactory_publish_repoKey=libs-milestone-local publishMavenJavaPublicationToSonatypeRepository
+          ./gradlew -Dorg.gradle.parallel=false --no-build-cache assemble sign artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io -Partifactory_publish_repoKey=libs-milestone-local publishMavenJavaPublicationToSonatypeRepository
     - name: Stage the milestone
       env:
         ORG_GRADLE_PROJECT_sonatypeUsername: ${{secrets.SONATYPE_USERNAME}}
@@ -252,7 +252,7 @@ jobs:
         ORG_GRADLE_PROJECT_sonatypeUsername: ${{secrets.SONATYPE_USERNAME}}
         ORG_GRADLE_PROJECT_sonatypePassword: ${{secrets.SONATYPE_PASSWORD}}
       run: |
-          ./gradlew -Dorg.gradle.parallel=false assemble sign artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io  -Partifactory_publish_repoKey=libs-release-local publishMavenJavaPublicationToSonatypeRepository
+          ./gradlew -Dorg.gradle.parallel=false --no-build-cache assemble sign artifactoryPublish -Partifactory_publish_contextUrl=https://repo.spring.io  -Partifactory_publish_repoKey=libs-release-local publishMavenJavaPublicationToSonatypeRepository
     - name: Stage the release
       env:
         ORG_GRADLE_PROJECT_sonatypeUsername: ${{secrets.SONATYPE_USERNAME}}

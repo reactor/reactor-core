@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2019-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Named;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -69,16 +68,15 @@ public class SchedulerWorkersHooksTest {
 
 	@ParameterizedTestWithName
 	@MethodSource("workers")
-	@Tag("slow")
 	public void onScheduleIsAdditive(Supplier<Scheduler.Worker> workerType) throws Exception {
 		AtomicInteger tracker = new AtomicInteger();
 		Schedulers.onScheduleHook("k1", new TrackingDecorator(tracker, 1));
 		Schedulers.onScheduleHook("k2", new TrackingDecorator(tracker, 10));
 		Schedulers.onScheduleHook("k3", new TrackingDecorator(tracker, 100));
 
-		CountDownLatch latch = new CountDownLatch(3);
+		CountDownLatch latch = new CountDownLatch(1);
 		afterTest.autoDispose(workerType.get()).schedule(latch::countDown);
-		latch.await(5, TimeUnit.SECONDS);
+		assertThat(latch.await(5, TimeUnit.SECONDS)).as("task executed").isTrue();
 
 		assertThat(tracker).as("3 decorators invoked").hasValue(111);
 	}
@@ -93,7 +91,7 @@ public class SchedulerWorkersHooksTest {
 
 		CountDownLatch latch = new CountDownLatch(1);
 		afterTest.autoDispose(workerType.get()).schedule(latch::countDown);
-		latch.await(5, TimeUnit.SECONDS);
+		assertThat(latch.await(5, TimeUnit.SECONDS)).as("task executed").isTrue();
 
 		assertThat(tracker).hasValue(100);
 	}
@@ -107,14 +105,13 @@ public class SchedulerWorkersHooksTest {
 
 		CountDownLatch latch = new CountDownLatch(1);
 		afterTest.autoDispose(workerType.get()).schedule(latch::countDown);
-		latch.await(5, TimeUnit.SECONDS);
+		assertThat(latch.await(5, TimeUnit.SECONDS)).as("task executed").isTrue();
 
 		assertThat(tracker).hasValue(0);
 	}
 
 	@ParameterizedTestWithName
 	@MethodSource("workers")
-	@Tag("slow")
 	public void onScheduleResetOne(Supplier<Scheduler.Worker> workerType) throws InterruptedException {
 		AtomicInteger tracker = new AtomicInteger();
 		Schedulers.onScheduleHook("k1", new TrackingDecorator(tracker, 1));
@@ -122,9 +119,9 @@ public class SchedulerWorkersHooksTest {
 		Schedulers.onScheduleHook("k3", new TrackingDecorator(tracker, 100));
 		Schedulers.resetOnScheduleHook("k2");
 
-		CountDownLatch latch = new CountDownLatch(3);
+		CountDownLatch latch = new CountDownLatch(1);
 		afterTest.autoDispose(workerType.get()).schedule(latch::countDown);
-		latch.await(5, TimeUnit.SECONDS);
+		assertThat(latch.await(5, TimeUnit.SECONDS)).as("task executed").isTrue();
 
 		assertThat(tracker).hasValue(101);
 	}
@@ -140,7 +137,7 @@ public class SchedulerWorkersHooksTest {
 
 		CountDownLatch latch = new CountDownLatch(1);
 		afterTest.autoDispose(workerType.get()).schedule(latch::countDown);
-		latch.await(5, TimeUnit.SECONDS);
+		assertThat(latch.await(5, TimeUnit.SECONDS)).as("task executed").isTrue();
 
 		assertThat(tracker).hasValue(0);
 	}
@@ -155,7 +152,7 @@ public class SchedulerWorkersHooksTest {
 
 		CountDownLatch latch = new CountDownLatch(1);
 		afterTest.autoDispose(workerType.get()).schedule(latch::countDown);
-		latch.await(5, TimeUnit.SECONDS);
+		assertThat(latch.await(5, TimeUnit.SECONDS)).as("task executed").isTrue();
 
 		assertThat(items).containsExactly(
 				"k1#0",

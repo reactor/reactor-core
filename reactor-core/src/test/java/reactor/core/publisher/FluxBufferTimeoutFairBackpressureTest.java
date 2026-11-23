@@ -128,7 +128,7 @@ public class FluxBufferTimeoutFairBackpressureTest {
 				);
 
 		try {
-			Assertions.assertFalse(completed.tryAcquire(1, TimeUnit.MINUTES), "Should " +
+			Assertions.assertFalse(completed.tryAcquire(10, TimeUnit.SECONDS), "Should " +
 					"not finish before subscription cancelled.");
 			Assertions.assertFalse(hasError.get(), "Should not have received an error.");
 		} finally {

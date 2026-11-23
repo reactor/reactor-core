@@ -202,6 +202,10 @@ configure(subprojects) { p ->
 
 		jvmArgs = ["-XX:MaxGCPauseMillis=20"]
 
+		// coverage is not collected: the agent's instrumentation slows down the
+		// CPU-heavy concurrency tests and shifts their timing
+		jacoco.enabled = false
+
 		systemProperty("java.awt.headless", "true")
 		systemProperty("testGroups", p.findProperty("testGroups"))
 		scanForTestClasses = false

@@ -107,9 +107,9 @@ public class FluxWindowTimeoutTest {
 		                                       });
 
 		System.out.println("Running test...");
-		final Duration TIME_TO_PUBLISH_EVENTS = Duration.ofMinutes(1);
+		final Duration TIME_TO_PUBLISH_EVENTS = Duration.ofSeconds(10);
 		try {
-			assertFalse(isCompleted.tryAcquire(TIME_TO_PUBLISH_EVENTS.toMinutes(), TimeUnit.MINUTES),
+			assertFalse(isCompleted.tryAcquire(TIME_TO_PUBLISH_EVENTS.toMillis(), TimeUnit.MILLISECONDS),
 					"Should have been false because it would not error.");
 
 			assertFalse(hasError.get(), "Should not have received an error.");
