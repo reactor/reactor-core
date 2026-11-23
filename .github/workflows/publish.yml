@@ -65,6 +65,9 @@ jobs:
       uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c
       with:
         cache-provider: basic
+        # All jobs share one cache entry, which only the integration job writes: its tests
+        # compile the reactor-core tests, so it downloads what the core jobs need and more.
+        cache-read-only: ${{ matrix.test-type.type != 'integration' }}
     - name: configure gradle properties
       run: |
         mkdir -p ${GRADLE_USER_HOME:-$HOME/.gradle}
@@ -119,6 +122,7 @@ jobs:
       uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c
       with:
         cache-provider: basic
+        cache-read-only: true
     - name: configure gradle properties
       run: |
         mkdir -p ${GRADLE_USER_HOME:-$HOME/.gradle}
