@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2020-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,6 +119,13 @@ public class JavaConventions implements Plugin<Project> {
 
 		System.out.println(task.getName() + ": compiling with Java " + compilerVersion + ", targeting " + finalVersion);
 
+		if (finalVersion > defaultVersion) {
+			// The compiler JDK provides the API of each release it supports, so the
+			// installation of the target JDK isn't needed.
+			task.getOptions().getRelease().set(finalVersion);
+			return;
+		}
+
 		Provider<JavaCompiler> compiler = project.getExtensions()
 		                                         .getByType(JavaToolchainService.class)
 		                                         .compilerFor(spec -> spec.getLanguageVersion().set(JavaLanguageVersion.of(finalVersion)));
@@ -130,7 +137,14 @@ public class JavaConventions implements Plugin<Project> {
 		task.setSourceCompatibility(releaseVersionString);
 		task.setTargetCompatibility(releaseVersionString);
 		FileCollection existingBootClasspath = task.getOptions().getBootstrapClasspath();
-		FileCollection bootClasspath = project.files(compiler.map(c -> c.getMetadata().getInstallationPath().getAsFileTree()).get());
+		// The Java 8 platform classes are in jre/lib/*.jar. The rest of the installation
+		// (sources, docs, native libraries) isn't needed to compile, and would only add
+		// hundreds of MB of task inputs to fingerprint.
+		FileCollection bootClasspath = project.files(compiler.map(c -> c.getMetadata()
+		                                                             .getInstallationPath()
+		                                                             .getAsFileTree()
+		                                                             .matching(files -> files.include("jre/lib/*.jar")))
+		                                                     .get());
 
 		if (existingBootClasspath != null) {
 			bootClasspath = existingBootClasspath.plus(bootClasspath);

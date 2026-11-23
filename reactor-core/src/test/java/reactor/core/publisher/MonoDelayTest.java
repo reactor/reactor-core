@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,21 +63,28 @@ public class MonoDelayTest {
 	}
 
 	@Test
-	public void multipleDelaysUsingDefaultScheduler() throws InterruptedException {
-		AtomicLong counter = new AtomicLong();
+	public void multipleDelaysUsingDefaultScheduler() {
+		// replaces the default Schedulers, which Mono.delay(Duration) uses
+		VirtualTimeScheduler vts = VirtualTimeScheduler.getOrSet();
+		try {
+			AtomicLong counter = new AtomicLong();
 
-		Mono.delay(Duration.ofMillis(50)).subscribe(v -> counter.incrementAndGet());
-		Mono.delay(Duration.ofMillis(100)).subscribe(v -> counter.incrementAndGet());
-		Mono.delay(Duration.ofMillis(150)).subscribe(v -> counter.incrementAndGet());
-		Mono.delay(Duration.ofMillis(200)).subscribe(v -> counter.incrementAndGet());
+			Mono.delay(Duration.ofMillis(50)).subscribe(v -> counter.incrementAndGet());
+			Mono.delay(Duration.ofMillis(100)).subscribe(v -> counter.incrementAndGet());
+			Mono.delay(Duration.ofMillis(150)).subscribe(v -> counter.incrementAndGet());
+			Mono.delay(Duration.ofMillis(200)).subscribe(v -> counter.incrementAndGet());
 
-		assertThat(counter.intValue()).isEqualTo(0);
+			assertThat(counter.intValue()).isEqualTo(0);
 
-		Thread.sleep(110);
-		assertThat(counter.intValue()).isEqualTo(2);
+			vts.advanceTimeBy(Duration.ofMillis(110));
+			assertThat(counter.intValue()).isEqualTo(2);
 
-		Thread.sleep(110);
-		assertThat(counter.intValue()).isEqualTo(4);
+			vts.advanceTimeBy(Duration.ofMillis(110));
+			assertThat(counter.intValue()).isEqualTo(4);
+		}
+		finally {
+			VirtualTimeScheduler.reset();
+		}
 	}
 
 	@Test
