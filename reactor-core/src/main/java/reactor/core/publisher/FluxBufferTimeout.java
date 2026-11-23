@@ -294,9 +294,13 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 								timer.schedule(this::bufferTimedOut, timeSpan, unit);
 						currentTimeoutTask.update(disposable);
 					} catch (RejectedExecutionException e) {
-						this.error = Operators.onRejectedExecution(e, subscription, null, t, actual.currentContext());
-						previousState = forceAddWork(this,
-								BufferTimeoutWithBackpressureSubscriber::setTerminated);
+						// A cancelled subscriber has its worker disposed by drain. The
+						// element is already enqueued, so the drain below discards it.
+						if (!isCancelled(this.state)) {
+							this.error = Operators.onRejectedExecution(e, subscription, null, t, actual.currentContext());
+							previousState = forceAddWork(this,
+									BufferTimeoutWithBackpressureSubscriber::setTerminated);
+						}
 					}
 				}
 			} else {
@@ -403,6 +407,9 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 						trace(logger, "Discarding entire queue of " + queue.size());
 					}
 					Operators.onDiscardQueueWithClear(queue, currentContext(), null);
+					// Disposed while holding WIP rather than in cancel(), so that a drain
+					// running concurrently cannot reschedule a timeout on the worker.
+					timer.dispose();
 					currentState = tryClearWip(this, currentState);
 					if (!hasWorkInProgress(currentState)) {
 						return;
@@ -469,6 +476,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 						} else if (queue.isEmpty()) {
 							actual.onComplete();
 						}
+						timer.dispose();
 					}
 
 					if (consumed > 0) {

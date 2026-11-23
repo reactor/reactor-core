@@ -18,6 +18,7 @@ package reactor.core.publisher;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -499,6 +500,77 @@ public class FluxBufferTimeoutFairBackpressureTest {
 
 		assertThat(seen.size()).isEqualTo(500);
 		assertThat(complete.get()).isTrue();
+	}
+
+	@Test
+	public void workerDisposedAfterCompletionDelivered() {
+		Scheduler.Worker worker = VirtualTimeScheduler.create().createWorker();
+		List<List<Integer>> emitted = new ArrayList<>();
+		AtomicBoolean complete = new AtomicBoolean();
+		AtomicReference<Subscription> downstream = new AtomicReference<>();
+		CoreSubscriber<List<Integer>> actual = new LambdaSubscriber<>(
+				emitted::add, null, () -> complete.set(true), downstream::set);
+
+		FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Integer, List<Integer>> test =
+				new FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Integer, List<Integer>>(
+						actual, 10, 100, TimeUnit.MILLISECONDS, worker, ArrayList::new, null);
+		test.onSubscribe(Operators.emptySubscription());
+
+		test.onNext(1);
+		test.onNext(2);
+		test.onComplete();
+
+		// Without demand the final buffer is pending and the worker is still needed.
+		assertThat(complete).isFalse();
+		assertThat(worker.isDisposed()).isFalse();
+
+		downstream.get().request(1);
+
+		assertThat(emitted).containsExactly(Arrays.asList(1, 2));
+		assertThat(complete).isTrue();
+		assertThat(worker.isDisposed()).isTrue();
+	}
+
+	@Test
+	public void workerDisposedAfterErrorDelivered() {
+		Scheduler.Worker worker = VirtualTimeScheduler.create().createWorker();
+		AtomicReference<Throwable> error = new AtomicReference<>();
+		CoreSubscriber<List<Integer>> actual = new LambdaSubscriber<>(
+				null, error::set, null, null);
+
+		FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Integer, List<Integer>> test =
+				new FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Integer, List<Integer>>(
+						actual, 10, 100, TimeUnit.MILLISECONDS, worker, ArrayList::new, null);
+		test.onSubscribe(Operators.emptySubscription());
+
+		test.onNext(1);
+		assertThat(worker.isDisposed()).isFalse();
+
+		test.onError(new IllegalStateException("boom"));
+
+		assertThat(error.get()).hasMessage("boom");
+		assertThat(worker.isDisposed()).isTrue();
+	}
+
+	@Test
+	public void workerDisposedAfterCancel() {
+		Scheduler.Worker worker = VirtualTimeScheduler.create().createWorker();
+		List<Object> discarded = new ArrayList<>();
+		CoreSubscriber<List<Integer>> actual = new LambdaSubscriber<>(
+				null, null, null, null, Operators.enableOnDiscard(null, discarded::add));
+
+		FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Integer, List<Integer>> test =
+				new FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Integer, List<Integer>>(
+						actual, 10, 100, TimeUnit.MILLISECONDS, worker, ArrayList::new, null);
+		test.onSubscribe(Operators.emptySubscription());
+
+		test.onNext(1);
+		assertThat(worker.isDisposed()).isFalse();
+
+		test.cancel();
+
+		assertThat(discarded).containsExactly(1);
+		assertThat(worker.isDisposed()).isTrue();
 	}
 
 	//see https://github.com/reactor/reactor-core/issues/1247

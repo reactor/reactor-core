@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2023-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import org.openjdk.jcstress.annotations.Outcome;
 import org.openjdk.jcstress.annotations.State;
 import org.openjdk.jcstress.infra.results.LLL_Result;
 import org.openjdk.jcstress.infra.results.LL_Result;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.util.FastLogger;
 import reactor.test.scheduler.VirtualTimeScheduler;
 
@@ -52,8 +53,10 @@ public class FluxBufferTimeoutStressTest {
 
 		final StressSubscriber<List<Long>> subscriber = new StressSubscriber<>();
 
+		final Scheduler.Worker worker = virtualTimeScheduler.createWorker();
+
 		final FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Long, List<Long>> bufferTimeoutSubscriber =
-				new FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<>(subscriber, 2, 1, TimeUnit.SECONDS, virtualTimeScheduler.createWorker(), bufferSupplier(), fastLogger);
+				new FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<>(subscriber, 2, 1, TimeUnit.SECONDS, worker, bufferSupplier(), fastLogger);
 
 		final StressSubscription<Long> subscription = new StressSubscription<>(bufferTimeoutSubscriber);
 
@@ -77,6 +80,10 @@ public class FluxBufferTimeoutStressTest {
 		public void arbiter(LL_Result result) {
 			result.r1 = subscriber.onNextCalls.get();
 			result.r2 = subscription.requestsCount.get();
+
+			if (!worker.isDisposed()) {
+				fail(fastLogger, "worker not disposed; result=" + result);
+			}
 
 			if (subscriber.onCompleteCalls.get() != 1) {
 				fail(fastLogger,
@@ -110,8 +117,10 @@ public class FluxBufferTimeoutStressTest {
 
 		final StressSubscriber<List<Long>> subscriber = new StressSubscriber<>();
 
+		final Scheduler.Worker worker = virtualTimeScheduler.createWorker();
+
 		final FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Long, List<Long>> bufferTimeoutSubscriber =
-				new FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<>(subscriber, 2, 1, TimeUnit.SECONDS, virtualTimeScheduler.createWorker(), bufferSupplier(), fastLogger);
+				new FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<>(subscriber, 2, 1, TimeUnit.SECONDS, worker, bufferSupplier(), fastLogger);
 
 		final StressSubscription<Long> subscription = new StressSubscription<>(bufferTimeoutSubscriber);
 
@@ -143,6 +152,10 @@ public class FluxBufferTimeoutStressTest {
 		public void arbiter(LL_Result result) {
 			result.r1 = subscriber.onNextCalls.get();
 			result.r2 = subscription.requestsCount.get();
+
+			if (!worker.isDisposed()) {
+				fail(fastLogger, "worker not disposed; result=" + result);
+			}
 
 			if (subscriber.onCompleteCalls.get() != 1) {
 				fail(fastLogger, "unexpected completion: " + subscriber.onCompleteCalls.get());
@@ -182,8 +195,10 @@ public class FluxBufferTimeoutStressTest {
 
 		final StressSubscriber<List<Long>> subscriber = new StressSubscriber<>(1);
 
+		final Scheduler.Worker worker = virtualTimeScheduler.createWorker();
+
 		final FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Long, List<Long>> bufferTimeoutSubscriber =
-				new FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<>(subscriber, 2, 1, TimeUnit.SECONDS, virtualTimeScheduler.createWorker(), bufferSupplier(), fastLogger);
+				new FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<>(subscriber, 2, 1, TimeUnit.SECONDS, worker, bufferSupplier(), fastLogger);
 
 		Sinks.Many<Long> proxy = Sinks.unsafe().many().unicast().onBackpressureBuffer();
 
@@ -234,6 +249,10 @@ public class FluxBufferTimeoutStressTest {
 			result.r2 = subscriber.onCompleteCalls.get();
 			result.r3 = requested.get();
 
+			if (subscriber.onCompleteCalls.get() == 1 && !worker.isDisposed()) {
+				fail(fastLogger, "worker not disposed after completion; result=" + result);
+			}
+
 			if (!allValuesHandled(fastLogger, 4, emptyList(), subscriber.receivedValues)) {
 				fail(fastLogger, "minimum set of values not delivered");
 			}
@@ -278,8 +297,10 @@ public class FluxBufferTimeoutStressTest {
 
 		final StressSubscriber<List<Long>> subscriber = new StressSubscriber<>();
 
+		final Scheduler.Worker worker = virtualTimeScheduler.createWorker();
+
 		final FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Long, List<Long>> bufferTimeoutSubscriber =
-				new FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<>(subscriber, 2, 1, TimeUnit.SECONDS, virtualTimeScheduler.createWorker(), bufferSupplier(), fastLogger);
+				new FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<>(subscriber, 2, 1, TimeUnit.SECONDS, worker, bufferSupplier(), fastLogger);
 
 		final StressSubscription<Long> subscription = new StressSubscription<>(bufferTimeoutSubscriber);
 
@@ -304,6 +325,13 @@ public class FluxBufferTimeoutStressTest {
 			result.r1 = subscriber.onNextCalls.get();
 			result.r2 = subscriber.onCompleteCalls.get();
 			result.r3 = subscription.requestsCount.get();
+
+			if (!worker.isDisposed()) {
+				fail(fastLogger, "worker not disposed; result=" + result);
+			}
+			if (subscriber.onErrorCalls.get() != 0) {
+				fail(fastLogger, "unexpected error after cancel " + subscriber.error);
+			}
 
 			if (subscriber.onCompleteCalls.get() > 1) {
 				fail(fastLogger, "unexpected completion " + subscriber.onCompleteCalls.get());
@@ -336,8 +364,10 @@ public class FluxBufferTimeoutStressTest {
 		final StressSubscriber<List<Long>> subscriber = new StressSubscriber<>(1);
 
 		final FastLogger fastLogger = new FastLogger(getClass().getName());
+		final Scheduler.Worker worker = virtualTimeScheduler.createWorker();
+
 		final FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Long, List<Long>> bufferTimeoutSubscriber =
-				new FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<>(subscriber, 2, 1, TimeUnit.SECONDS, virtualTimeScheduler.createWorker(), bufferSupplier(), fastLogger);
+				new FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<>(subscriber, 2, 1, TimeUnit.SECONDS, worker, bufferSupplier(), fastLogger);
 
 		Sinks.Many<Long> proxy = Sinks.unsafe().many().unicast().onBackpressureBuffer();
 		AtomicLong emits = new AtomicLong();
@@ -374,6 +404,13 @@ public class FluxBufferTimeoutStressTest {
 			result.r1 = subscriber.onNextCalls.get();
 			result.r2 = subscriber.onCompleteCalls.get();
 			result.r3 = requested.get();
+
+			if (!worker.isDisposed()) {
+				fail(fastLogger, "worker not disposed; result=" + result);
+			}
+			if (subscriber.onErrorCalls.get() != 0) {
+				fail(fastLogger, "unexpected error after cancel " + subscriber.error);
+			}
 
 			if (subscriber.onCompleteCalls.get() > 1) {
 				fail(fastLogger, "unexpected completion " + subscriber.onCompleteCalls.get());
@@ -415,8 +452,10 @@ public class FluxBufferTimeoutStressTest {
 
 		final StressSubscriber<List<Long>> subscriber = new StressSubscriber<>();
 
+		final Scheduler.Worker worker = virtualTimeScheduler.createWorker();
+
 		final FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<Long, List<Long>> bufferTimeoutSubscriber =
-				new FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<>(subscriber, 2, 1, TimeUnit.SECONDS, virtualTimeScheduler.createWorker(), bufferSupplier(), fastLogger);
+				new FluxBufferTimeout.BufferTimeoutWithBackpressureSubscriber<>(subscriber, 2, 1, TimeUnit.SECONDS, worker, bufferSupplier(), fastLogger);
 
 		final StressSubscription<Long> subscription = new StressSubscription<>(bufferTimeoutSubscriber);
 
@@ -446,6 +485,13 @@ public class FluxBufferTimeoutStressTest {
 			result.r1 = subscriber.onNextCalls.get();
 			result.r2 = subscriber.onCompleteCalls.get();
 			result.r3 = subscription.requestsCount.get();
+
+			if (!worker.isDisposed()) {
+				fail(fastLogger, "worker not disposed; result=" + result);
+			}
+			if (subscriber.onErrorCalls.get() != 0) {
+				fail(fastLogger, "unexpected error after cancel " + subscriber.error);
+			}
 
 			if (subscriber.onCompleteCalls.get() > 1) {
 				fail(fastLogger,
