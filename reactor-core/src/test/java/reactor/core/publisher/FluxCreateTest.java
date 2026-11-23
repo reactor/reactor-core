@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2023 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -515,8 +515,10 @@ class FluxCreateTest {
 
 	@Test
 	void fluxCreateSerializedConcurrent() {
-		Scheduler.Worker w1 = Schedulers.boundedElastic().createWorker();
-		Scheduler.Worker w2 = Schedulers.boundedElastic().createWorker();
+		Scheduler s1 = Schedulers.newSingle("fluxCreateSerializedConcurrent-1");
+		Scheduler s2 = Schedulers.newSingle("fluxCreateSerializedConcurrent-2");
+		Scheduler.Worker w1 = s1.createWorker();
+		Scheduler.Worker w2 = s2.createWorker();
 		CountDownLatch latch = new CountDownLatch(1);
 		CountDownLatch latch2 = new CountDownLatch(1);
 		AtomicReference<Thread> ref = new AtomicReference<>();
@@ -526,7 +528,7 @@ class FluxCreateTest {
 		Flux<String> created = Flux.create(serialized -> {
 			w1.schedule(() -> serialized.next("test1"));
 			try {
-				latch2.await();
+				assertThat(latch2.await(5, TimeUnit.SECONDS)).as("latch2").isTrue();
 			}
 			catch (InterruptedException e) {
 				fail("unexpected InterruptedException");
@@ -547,7 +549,7 @@ class FluxCreateTest {
 				            ref.set(Thread.currentThread());
 				            latch2.countDown();
 				            try {
-					            latch.await();
+					            assertThat(latch.await(5, TimeUnit.SECONDS)).as("latch").isTrue();
 				            }
 				            catch (InterruptedException e) {
 					            fail("Unexpected InterruptedException");
@@ -561,11 +563,12 @@ class FluxCreateTest {
 				            assertThat(ref).hasValue(Thread.currentThread());
 				            assertThat(s).isEqualTo("test3");
 			            })
-			            .verifyComplete();
+			            .expectComplete()
+			            .verify(Duration.ofSeconds(10));
 		}
 		finally {
-			w1.dispose();
-			w2.dispose();
+			s1.dispose();
+			s2.dispose();
 		}
 	}
 
