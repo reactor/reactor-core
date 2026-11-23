@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -1140,8 +1141,9 @@ class FluxCreateTest {
 
 		StepVerifier.create(created.take(count, false).publishOn(Schedulers.parallel(), 1000))
 		            .expectNextCount(count)
+		            .as(overflowStrategy + (slowProducer ? " with slow producer" : " with fast producer"))
 		            .expectComplete()
-		            .verify();
+		            .verify(Duration.ofSeconds(10));
 	}
 
 	private static class TestQueue {
@@ -1169,14 +1171,22 @@ class FluxCreateTest {
 		}
 
 		void generateAsync(int requested, boolean slowProducer) {
-			if (slowProducer) {
-				for (int i = 0; i < 10; i++)
-					executor.schedule(() -> generate(requested / 10), i, TimeUnit.MILLISECONDS);
-				if (requested % 10 != 0)
-					executor.schedule(() -> generate(requested % 10), 11, TimeUnit.MILLISECONDS);
+			try {
+				if (slowProducer) {
+					for (int i = 0; i < 10; i++)
+						executor.schedule(() -> generate(requested / 10), i, TimeUnit.MILLISECONDS);
+					if (requested % 10 != 0)
+						executor.schedule(() -> generate(requested % 10), 11, TimeUnit.MILLISECONDS);
+				}
+				else {
+					executor.submit(() -> generate(requested * 2));
+				}
 			}
-			else {
-				executor.submit(() -> generate(requested * 2));
+			catch (RejectedExecutionException e) {
+				// a request racing with take() cancelling the sink arrives after onDispose
+				// closed the executor; the exception would escape request() and abort the
+				// publishOn drain loop before it delivers onComplete
+				return;
 			}
 			pushToSink();
 		}
