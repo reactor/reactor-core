@@ -40,9 +40,10 @@ jobs:
         run: ./gradlew :reactor-core:jcstress --no-daemon
 
   dispatch-maintenance-branches:
-    # Scheduled runs only happen on the default branch. A maintenance branch is tested by a run
-    # dispatched on that branch, so that its code never executes in the default branch's context.
-    if: github.event_name == 'schedule'
+    # Schedules only fire on the default branch. A maintenance branch is tested by a run dispatched
+    # on that branch, so that its code never executes in the default branch's context. Runs on
+    # maintenance branches don't dispatch further.
+    if: github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-24.04
     permissions:
       actions: write
