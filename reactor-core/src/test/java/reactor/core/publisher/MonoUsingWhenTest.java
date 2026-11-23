@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2018-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
@@ -48,7 +47,6 @@ public class MonoUsingWhenTest {
 
 	// see https://github.com/reactor/reactor-core/issues/2836
 	@Test
-	@Tag("slow")
 	void cancelEarlyDoesNotLeak() throws InterruptedException {
 		Random random = new Random();
 		Releaseable releaseable = new Releaseable();
@@ -60,17 +58,23 @@ public class MonoUsingWhenTest {
 	}
 
 	private void runCancelEarlyDoesNotLeak(Random random, Releaseable releaseable) throws InterruptedException {
+		// the random cancellation point covers the resource acquisition (0-10ms),
+		// the resource usage (10-20ms) and the time after completion (20-40ms)
 		Mono<Long> mono = Mono.usingWhen(Mono.fromSupplier(() -> releaseable)
-		                                     .delayElement(Duration.ofMillis(50)).doOnNext(Releaseable::allocate),
-				it -> Mono.delay(Duration.ofMillis(50), Schedulers.boundedElastic()),
+		                                     .delayElement(Duration.ofMillis(10)).doOnNext(Releaseable::allocate),
+				it -> Mono.delay(Duration.ofMillis(10), Schedulers.boundedElastic()),
 				Releaseable::release);
 
 		CompletableFuture<Long> future = mono.toFuture();
 
-		Thread.sleep(random.nextInt(200));
+		Thread.sleep(random.nextInt(40));
 		future.cancel(true);
 
-		Awaitility.await().atMost(Duration.ofSeconds(10)).until(releaseable::isReleased);
+		Awaitility.await()
+		          .pollDelay(Duration.ZERO)
+		          .pollInterval(Duration.ofMillis(1))
+		          .atMost(Duration.ofSeconds(10))
+		          .until(releaseable::isReleased);
 	}
 
 	static class Releaseable {

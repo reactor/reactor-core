@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2015-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -213,17 +213,18 @@ public class FluxReplayTest extends FluxOperatorTest<String, String> {
 	}
 
 	@Test
-	@Tag("slow")
 	void checkTimeCacheResubscribesAndCompletesAfterRepetitions() {
+		// each repetition takes at least 15ms (3 rounds of 5ms delays), so the cache
+		// expires several dozen times, at varying points of a repetition
 		Flux<Integer> flow = getSource2()
 				.doOnSubscribe(__ -> log.debug("Loading source..."))
-				.cache(Duration.ofMillis(200))
+				.cache(Duration.ofMillis(40))
 				.doOnSubscribe(__ -> log.debug("Pooling cycle starting..."))
 				.flatMap(this::process, 2)
-				.repeat(1000);
+				.repeat(200);
 
 		StepVerifier.create(flow)
-		            .expectNextCount(1001 * 5)
+		            .expectNextCount(201 * 5)
 		            .verifyComplete();
 	}
 

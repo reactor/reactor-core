@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2024 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package reactor.test.util;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -102,10 +103,12 @@ public class RaceTestUtils {
 	/**
 	 * Synchronizes the execution of several {@link Runnable}s as much as possible
 	 * to test race conditions. The method blocks until all have run to completion.
+	 * The runnables execute on dedicated platform threads, independent of the
+	 * {@link Schedulers} configuration.
 	 * @param rs the runnables to execute
 	 */
 	public static void race(final Runnable... rs) {
-		race(Schedulers.boundedElastic(), rs);
+		race(DefaultRaceScheduler.INSTANCE, rs);
 	}
 
 	/**
@@ -206,5 +209,22 @@ public class RaceTestUtils {
 		} else if (es.size() > 1) {
 			throw Exceptions.multiple(es.toArray(new Throwable[0]));
 		}
+	}
+
+	// Holder class, so that the threads are only created on the first race.
+	static final class DefaultRaceScheduler {
+
+		static final AtomicInteger COUNTER = new AtomicInteger();
+
+		// An unbounded pool of reused platform threads: every racer needs its own thread
+		// to spin on, and creating threads per race (e.g. virtual threads from a
+		// thread-per-task boundedElastic) makes races much slower.
+		static final Scheduler INSTANCE = Schedulers.fromExecutorService(
+				Executors.newCachedThreadPool(r -> {
+					Thread t = new Thread(r, "raceTestUtils-" + COUNTER.incrementAndGet());
+					t.setDaemon(true);
+					return t;
+				}),
+				"raceTestUtils");
 	}
 }
