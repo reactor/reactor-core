@@ -22,9 +22,11 @@ jobs:
             arguments: ":reactor-core:test --no-daemon"
           - type: core-java21
             arguments: ":reactor-core:java21Test --no-daemon"
-          - type: other
-            arguments: "check -x :reactor-core:test -x :reactor-core:java11Test -x :reactor-core:java21Test -x spotlessCheck -x :reactor-core:jcstress --no-daemon"
-    name: prepare - ${{ matrix.test-type.type }} tests
+          - type: integration
+            arguments: "integrationTests --no-daemon"
+          - type: static
+            arguments: "japicmp checkstyleNohttp --no-daemon"
+    name: prepare - ${{ matrix.test-type.type }} checks
     outputs:
       versionType: ${{ steps.version.outputs.versionType }}
       fullVersion: ${{ steps.version.outputs.fullVersion }}
