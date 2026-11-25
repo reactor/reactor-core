@@ -92,6 +92,17 @@ class SinkManyBestEffortTest {
 	}
 
 	@Test
+	void lateSubscriberSeesErrorNotComplete() {
+		SinkManyBestEffort<Integer> sink = SinkManyBestEffort.createBestEffort();
+
+		sink.tryEmitError(new IllegalStateException("boom")).orThrow();
+
+		StepVerifier.create(sink.asFlux())
+		            .expectErrorMessage("boom")
+		            .verify();
+	}
+
+	@Test
 	void tryEmitErrorOnTerminated() {
 		SinkManyBestEffort<Integer> sink = SinkManyBestEffort.createBestEffort();
 		sink.tryEmitError(new IllegalStateException("boom")).orThrow();
