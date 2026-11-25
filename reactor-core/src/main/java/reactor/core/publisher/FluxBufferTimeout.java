@@ -250,8 +250,9 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 						BufferTimeoutWithBackpressureSubscriber::incrementRequestIndex);
 				if (!hasWorkInProgress(previousState)) {
 					// If there was no demand before - try to fulfill the demand if there
-					// are buffered values.
-					drain(previouslyRequested == 0);
+					// are buffers ready to be delivered (full, timed out, or remaining
+					// after termination).
+					drain();
 				}
 			}
 		}
@@ -309,7 +310,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 			}
 
 			if (!hasWorkInProgress(previousState)) {
-				drain(false);
+				drain();
 			}
 		}
 
@@ -325,7 +326,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 					BufferTimeoutWithBackpressureSubscriber::setTimedOut);
 
 			if (!hasWorkInProgress(previousState)) {
-				drain(false);
+				drain();
 			}
 		}
 
@@ -344,7 +345,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 					BufferTimeoutWithBackpressureSubscriber::setTerminated);
 
 			if (!hasWorkInProgress(previousState)) {
-				drain(false);
+				drain();
 			}
 		}
 
@@ -361,7 +362,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 					BufferTimeoutWithBackpressureSubscriber::setTerminated);
 
 			if (!hasWorkInProgress(previousState)) {
-				drain(false);
+				drain();
 			}
 		}
 
@@ -382,7 +383,7 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 					BufferTimeoutWithBackpressureSubscriber::setCancelled);
 
 			if (!hasWorkInProgress(previousState)) {
-				drain(false);
+				drain();
 			}
 		}
 
@@ -390,11 +391,8 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 		 * Drain the queue and perform any actions that result from the current state.
 		 * Ths method must only be called when the caller ensured exclusive access.
 		 * That means that it successfully indicated there's work by setting the WIP flag.
-		 *
-		 * @param resumeDemand {@code true} if the previous {@link #requested demand}
-		 *                                      value was 0.
 		 */
-		private void drain(boolean resumeDemand) {
+		private void drain() {
 			if (logger != null) {
 				trace(logger, "drain start");
 			}
@@ -417,8 +415,11 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 				} else {
 					long index = getIndex(currentState);
 					long currentRequest = this.requested;
+					// Flush only buffers that are actually due: full, timed out, or
+					// left over after upstream termination. Resumed demand alone must
+					// not flush a partial buffer ahead of its timeout.
 					boolean shouldFlush = currentRequest > 0
-							&& (resumeDemand || isTimedOut(currentState) || isTerminated(currentState) || index >= batchSize);
+							&& (isTimedOut(currentState) || isTerminated(currentState) || index >= batchSize);
 
 					int consumed = 0;
 					if (logger != null) {
@@ -435,10 +436,6 @@ final class FluxBufferTimeout<T, C extends Collection<? super T>> extends Intern
 							if (logger != null) {
 								trace(logger, "flushed: " + consumedNow);
 							}
-							// We need to make sure that if work is added we clear the
-							// resumeDemand with which we entered the drain loop as the
-							// state is now different.
-							resumeDemand = false;
 							if (consumedNow == 0) {
 								break;
 							}
