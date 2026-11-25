@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2021 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,23 @@ package reactor.core.publisher;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.assertj.core.api.Assertions;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import reactor.core.CoreSubscriber;
+import reactor.core.Disposable;
 import reactor.core.Fuseable;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
+import reactor.test.subscriber.AssertSubscriber;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -202,4 +211,55 @@ public class FluxSubscribeOnCallableTest {
         test.cancel();
         Assertions.assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
+
+	@Test
+	public void discardsValueProducedAfterCancel() throws InterruptedException {
+		List<Object> discarded = Collections.synchronizedList(new ArrayList<>());
+		CountDownLatch inCallable = new CountDownLatch(1);
+		CountDownLatch cancelled = new CountDownLatch(1);
+		Scheduler scheduler = Schedulers.newSingle("subscribeOnCallableDiscard");
+		try {
+			Disposable subscription = Mono.fromSupplier(() -> {
+				                              inCallable.countDown();
+				                              try {
+					                              cancelled.await(10, TimeUnit.SECONDS);
+				                              }
+				                              catch (InterruptedException e) {
+					                              Thread.currentThread().interrupt();
+				                              }
+				                              return "value";
+			                              })
+			                              .subscribeOn(scheduler)
+			                              .doOnDiscard(Object.class, discarded::add)
+			                              .subscribe();
+
+			assertThat(inCallable.await(10, TimeUnit.SECONDS)).isTrue();
+			subscription.dispose();
+			cancelled.countDown();
+
+			Awaitility.await()
+			          .atMost(Duration.ofSeconds(5))
+			          .untilAsserted(() -> assertThat(discarded).as("discarded")
+			                                                   .containsExactly("value"));
+		}
+		finally {
+			scheduler.dispose();
+		}
+	}
+
+	@Test
+	public void discardsValueHeldWhenCancelledBeforeRequest() {
+		List<Object> discarded = Collections.synchronizedList(new ArrayList<>());
+
+		AssertSubscriber<String> ts = AssertSubscriber.create(0);
+		Mono.fromSupplier(() -> "value")
+		    .subscribeOn(Schedulers.immediate())
+		    .doOnDiscard(Object.class, discarded::add)
+		    .subscribe(ts);
+
+		ts.cancel();
+
+		assertThat(discarded).as("discarded").containsExactly("value");
+	}
+
 }
