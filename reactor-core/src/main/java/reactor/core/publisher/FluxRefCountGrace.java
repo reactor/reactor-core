@@ -46,6 +46,10 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 
 	@Nullable RefConnection connection;
 
+	// the RefConnection that connected most recently, which can differ from connection
+	// once that one terminated
+	@Nullable RefConnection lastConnected;
+
 	FluxRefCountGrace(ConnectableFlux<T> source, int n, Duration gracePeriod, Scheduler scheduler) {
 		this.source = ConnectableFlux.from(Objects.requireNonNull(source, "source"));
 		this.n = n;
@@ -92,13 +96,44 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 			if (!conn.connected && c + 1 == n) {
 				connect = true;
 				conn.connected = true;
+				lastConnected = conn;
 			}
 		}
 
 		inner.setRefConnection(conn);
 
 		if (connect) {
+			// Until source.connect() hands over the Disposable that disconnects the source,
+			// SOURCE_DISCONNECTOR holds this placeholder. If all subscribers leave in the
+			// meantime, disconnecting can only dispose the placeholder.
+			Disposable.Swap connecting = Disposables.swap();
+			if (!RefConnection.SOURCE_DISCONNECTOR.compareAndSet(conn, null, connecting)) {
+				// all subscribers left before connecting (e.g. cancelled inside onSubscribe),
+				// so the source is not connected at all
+				return;
+			}
 			source.connect(conn);
+			// d is what accept() stored. Handing it to the placeholder means:
+			// - no disconnect happened: nothing else uses the placeholder, so this does
+			//   nothing, a later disconnect disposes d directly
+			// - a disconnect happened after accept(): it already disposed the source and d is
+			//   only the marker it left behind, so this does nothing
+			// - a disconnect disposed the placeholder before accept(): this disposes d now
+			// - a disconnect took the placeholder but hasn't disposed it yet: d is kept in the
+			//   placeholder and gets disposed together with it
+			// This is not done in accept() because connect() calls it before subscribing to
+			// the source, and disconnecting that early would fail other subscribers already
+			// attached to the source.
+			// The source hands out its current connection to whoever connects, so once a
+			// newer RefConnection exists or started connecting, d belongs to it and must be
+			// left alone.
+			synchronized (this) {
+				Disposable d = RefConnection.SOURCE_DISCONNECTOR.get(conn);
+				RefConnection current = connection;
+				if (d != connecting && lastConnected == conn && (current == null || current == conn)) {
+					connecting.replace(d);
+				}
+			}
 		}
 	}
 
@@ -306,15 +341,20 @@ final class FluxRefCountGrace<T> extends Flux<T> implements Scannable, Fuseable 
 		public void cancel() {
 			s.cancel();
 
-			int previousState = this.state;
+			for (;;) {
+				int previousState = this.state;
 
-			if (isTerminated(previousState) || isCancelled(previousState)) {
-				return;
-			}
+				if (isTerminated(previousState) || isCancelled(previousState)) {
+					return;
+				}
 
-			if (STATE.compareAndSet(this, previousState, previousState | CANCELLED_FLAG)) {
-				assert connection != null : "connection must not be null when cancelling";
-				parent.cancel(connection);
+				if (STATE.compareAndSet(this, previousState, previousState | CANCELLED_FLAG)) {
+					// connection is written before actual.onSubscribe in setRefConnection,
+					// so it is visible to whoever received the subscription and cancels.
+					assert connection != null : "connection must not be null when cancelling";
+					parent.cancel(connection);
+					return;
+				}
 			}
 		}
 
