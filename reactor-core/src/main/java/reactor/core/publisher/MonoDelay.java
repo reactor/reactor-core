@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,15 @@ final class MonoDelay extends Mono<Long> implements Scannable,  SourceProducer<L
 
 	@Override
 	public void subscribe(CoreSubscriber<? super Long> actual) {
+		if (ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
+			ContextPropagation.<Long>subscribeWithThreadLocals(actual, this::subscribeActual);
+		}
+		else {
+			subscribeActual(actual);
+		}
+	}
+
+	void subscribeActual(CoreSubscriber<? super Long> actual) {
 		boolean failOnBackpressure = actual.currentContext().getOrDefault(CONTEXT_OPT_OUT_NOBACKPRESSURE, false) == Boolean.TRUE;
 
 		MonoDelayRunnable r = new MonoDelayRunnable(actual, failOnBackpressure);

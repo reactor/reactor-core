@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,15 @@ final class FluxInterval extends Flux<Long> implements SourceProducer<Long> {
 	
 	@Override
 	public void subscribe(CoreSubscriber<? super Long> actual) {
+		if (ContextPropagationSupport.shouldPropagateContextToThreadLocals()) {
+			ContextPropagation.<Long>subscribeWithThreadLocals(actual, this::subscribeActual);
+		}
+		else {
+			subscribeActual(actual);
+		}
+	}
+
+	void subscribeActual(CoreSubscriber<? super Long> actual) {
 		Worker w = timedScheduler.createWorker();
 
 		IntervalRunnable r = new IntervalRunnable(actual, w);

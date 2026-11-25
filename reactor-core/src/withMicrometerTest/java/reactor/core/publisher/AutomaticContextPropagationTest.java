@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2023-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,13 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -49,13 +52,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import reactor.core.CorePublisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.Exceptions;
 import reactor.core.Fuseable;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.test.ParameterizedTestWithName;
 import reactor.test.publisher.TestPublisher;
 import reactor.test.subscriber.TestSubscriber;
 import reactor.util.concurrent.Queues;
@@ -93,6 +99,251 @@ public class AutomaticContextPropagationTest {
 	static void removeThreadLocalAccessors() {
 		ContextRegistry globalRegistry = ContextRegistry.getInstance();
 		globalRegistry.removeThreadLocalAccessor(KEY);
+	}
+
+	@Test
+	void disconnectedIntervalDoesNotInheritThreadLocals() throws Exception {
+		CompletableFuture<String> tlValueOnTick = new CompletableFuture<>();
+
+		REF.set("subscribing_thread");
+		try {
+			Flux.interval(Duration.ofMillis(1))
+			    .take(1)
+			    .subscribe(tick -> tlValueOnTick.complete(REF.get()), tlValueOnTick::completeExceptionally);
+		}
+		finally {
+			REF.remove();
+		}
+
+		assertThat(tlValueOnTick.get(5, TimeUnit.SECONDS)).isEqualTo("ref_init");
+	}
+
+	@Test
+	void disconnectedDelayDoesNotInheritThreadLocals() throws Exception {
+		CompletableFuture<List<String>> tlValuesOnTicks = new CompletableFuture<>();
+
+		REF.set("subscribing_thread");
+		try {
+			Mono.delay(Duration.ofMillis(1))
+			    .repeat(1)
+			    .map(tick -> REF.get())
+			    .collectList()
+			    .subscribe(tlValuesOnTicks::complete, tlValuesOnTicks::completeExceptionally);
+		}
+		finally {
+			REF.remove();
+		}
+
+		assertThat(tlValuesOnTicks.get(5, TimeUnit.SECONDS)).containsExactly("ref_init", "ref_init");
+	}
+
+	@Nested
+	class TimerSources {
+
+		@EnumSource(TimerSource.class)
+		@ParameterizedTestWithName
+		void contextWriteIsUsedInsteadOfSubscribingThread(TimerSource source) throws Exception {
+			REF.set("subscribing_thread");
+			CompletableFuture<List<String>> values = source.flux()
+					.map(tick -> REF.get())
+					.contextWrite(Context.of(KEY, "chain_context"))
+					.collectList().toFuture();
+
+			assertThat(REF.get()).isEqualTo("subscribing_thread");
+			assertThat(values.get(5, TimeUnit.SECONDS)).containsExactly("chain_context", "chain_context");
+		}
+
+		@EnumSource(TimerSource.class)
+		@ParameterizedTestWithName
+		void contextCaptureStillReadsSubscribingThread(TimerSource source) throws Exception {
+			REF.set("subscribing_thread");
+			CompletableFuture<List<String>> values = source.flux()
+					.map(tick -> REF.get())
+					.contextCapture()
+					.collectList().toFuture();
+
+			assertThat(REF.get()).isEqualTo("subscribing_thread");
+			assertThat(values.get(5, TimeUnit.SECONDS)).containsExactly("subscribing_thread", "subscribing_thread");
+		}
+
+		@EnumSource(TimerSource.class)
+		@ParameterizedTestWithName
+		void nestedSubscriptionHasItsOwnContext(TimerSource source) throws Exception {
+			AtomicReference<CompletableFuture<List<String>>> values = new AtomicReference<>();
+			Mono.just(1)
+			    .doOnNext(ignored -> {
+				    assertThat(REF.get()).isEqualTo("request_context");
+				    values.set(source.flux().map(tick -> REF.get()).collectList().toFuture());
+				    assertThat(REF.get()).isEqualTo("request_context");
+			    })
+			    .contextWrite(Context.of(KEY, "request_context"))
+			    .block();
+
+			assertThat(values.get().get(5, TimeUnit.SECONDS)).containsExactly("ref_init", "ref_init");
+		}
+
+		@EnumSource(TimerSource.class)
+		@ParameterizedTestWithName
+		void scheduleHooksBeforeAndAfterAutomaticPropagationSeeSubscriberContext(TimerSource source) throws Exception {
+			List<String> captured = new CopyOnWriteArrayList<>();
+			AtomicInteger executions = new AtomicInteger();
+			Function<Runnable, Runnable> decorator = task -> {
+				captured.add(REF.get());
+				return () -> {
+					executions.incrementAndGet();
+					task.run();
+				};
+			};
+			Hooks.disableAutomaticContextPropagation();
+			Schedulers.onScheduleHook("beforeAutomaticPropagation", decorator);
+			Hooks.enableAutomaticContextPropagation();
+			Schedulers.onScheduleHook("afterAutomaticPropagation", decorator);
+
+			REF.set("subscribing_thread");
+			List<String> values = source.flux().map(tick -> REF.get()).collectList().toFuture()
+					.get(5, TimeUnit.SECONDS);
+
+			assertThat(values).containsExactly("ref_init", "ref_init");
+			assertThat(captured).isNotEmpty().containsOnly("ref_init");
+			assertThat(executions.get()).isGreaterThanOrEqualTo(4);
+			assertThat(REF.get()).isEqualTo("subscribing_thread");
+		}
+
+		@EnumSource(TimerSource.class)
+		@ParameterizedTestWithName
+		void subscriptionLeavesUnregisteredThreadLocalUntouched(TimerSource source) throws Exception {
+			ThreadLocal<String> unregistered = new ThreadLocal<>();
+			REF.set("subscribing_thread");
+			unregistered.set("unregistered_value");
+			try {
+				CompletableFuture<List<Long>> values = source.flux()
+						.doOnSubscribe(subscription -> assertThat(unregistered.get()).isEqualTo("unregistered_value"))
+						.collectList().toFuture();
+
+				assertThat(REF.get()).isEqualTo("subscribing_thread");
+				assertThat(unregistered.get()).isEqualTo("unregistered_value");
+				assertThat(values.get(5, TimeUnit.SECONDS)).hasSize(2);
+			}
+			finally {
+				unregistered.remove();
+			}
+		}
+
+		@EnumSource(TimerSource.class)
+		@ParameterizedTestWithName
+		void schedulerThreadLocalIsRestoredAfterDelivery(TimerSource source) throws Exception {
+			ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+			Scheduler scheduler = Schedulers.fromExecutorService(executor);
+			try {
+				executor.submit(() -> REF.set("worker_context")).get(5, TimeUnit.SECONDS);
+				REF.set("subscribing_thread");
+				List<String> values = source.flux(Duration.ofMillis(1), scheduler)
+						.map(tick -> REF.get()).collectList().toFuture().get(5, TimeUnit.SECONDS);
+
+				assertThat(values).containsExactly("ref_init", "ref_init");
+				assertThat(executor.submit(REF::get).get(5, TimeUnit.SECONDS)).isEqualTo("worker_context");
+				assertThat(REF.get()).isEqualTo("subscribing_thread");
+			}
+			finally {
+				scheduler.dispose();
+			}
+		}
+
+		@EnumSource(TimerSource.class)
+		@ParameterizedTestWithName
+		void cancellationRestoresCallingThread(TimerSource source) {
+			REF.set("subscribing_thread");
+			CompletableFuture<List<Long>> values = source.flux(Duration.ofDays(1), Schedulers.parallel())
+					.collectList().toFuture();
+			assertThat(REF.get()).isEqualTo("subscribing_thread");
+
+			REF.set("cancelling_thread");
+			assertThat(values.cancel(false)).isTrue();
+			assertThat(values.isCancelled()).isTrue();
+			assertThat(REF.get()).isEqualTo("cancelling_thread");
+		}
+
+		@EnumSource(TimerSource.class)
+		@ParameterizedTestWithName
+		void schedulingRejectionRestoresCallingThread(TimerSource source) throws Exception {
+			REF.set("subscribing_thread");
+			AtomicReference<Throwable> failure = new AtomicReference<>();
+			CompletableFuture<String> valueOnError = new CompletableFuture<>();
+			source.flux(Duration.ofMillis(1), Schedulers.immediate())
+			      .subscribe(ignored -> valueOnError.complete("unexpected value"),
+					      error -> {
+						      failure.set(error);
+						      valueOnError.complete(REF.get());
+					      });
+
+			assertThat(valueOnError.get(5, TimeUnit.SECONDS)).isEqualTo("ref_init");
+			assertThat(failure.get()).isInstanceOf(RejectedExecutionException.class);
+			assertThat(REF.get()).isEqualTo("subscribing_thread");
+		}
+
+		@EnumSource(TimerSource.class)
+		@ParameterizedTestWithName
+		void propagationEnabledAfterAssembly(TimerSource source) throws Exception {
+			Hooks.disableAutomaticContextPropagation();
+			Flux<Long> timer = source.flux();
+			Hooks.enableAutomaticContextPropagation();
+			REF.set("subscribing_thread");
+
+			assertThat(timer.map(tick -> REF.get()).collectList().toFuture().get(5, TimeUnit.SECONDS))
+					.containsExactly("ref_init", "ref_init");
+			assertThat(REF.get()).isEqualTo("subscribing_thread");
+		}
+
+		@Test
+		void delayRequestedAfterTimerFiresUsesSubscriberContext() throws Exception {
+			CompletableFuture<Void> timerFinished = new CompletableFuture<>();
+			CompletableFuture<String> valueOnNext = new CompletableFuture<>();
+			Schedulers.onScheduleHook("timerFinished", task -> () -> {
+				task.run();
+				timerFinished.complete(null);
+			});
+			BaseSubscriber<Long> subscriber = new BaseSubscriber<Long>() {
+				@Override
+				protected void hookOnSubscribe(Subscription subscription) {
+				}
+
+				@Override
+				protected void hookOnNext(Long value) {
+					valueOnNext.complete(REF.get());
+				}
+			};
+			REF.set("subscribing_thread");
+			Mono.delay(Duration.ofMillis(1)).subscribe(subscriber);
+			timerFinished.get(5, TimeUnit.SECONDS);
+
+			REF.set("requesting_thread");
+			subscriber.request(1);
+
+			assertThat(valueOnNext.get(5, TimeUnit.SECONDS)).isEqualTo("ref_init");
+			assertThat(REF.get()).isEqualTo("requesting_thread");
+		}
+
+		@Test
+		void directSchedulingStillCapturesThreadLocals() throws Exception {
+			REF.set("scheduling_thread");
+			CompletableFuture<String> value = new CompletableFuture<>();
+			Schedulers.parallel().schedule(() -> value.complete(REF.get()));
+
+			assertThat(value.get(5, TimeUnit.SECONDS)).isEqualTo("scheduling_thread");
+			assertThat(REF.get()).isEqualTo("scheduling_thread");
+		}
+	}
+
+	enum TimerSource {
+		INTERVAL, REPEATED_DELAY;
+
+		Flux<Long> flux() {
+			return flux(Duration.ofMillis(1), Schedulers.parallel());
+		}
+
+		Flux<Long> flux(Duration delay, Scheduler scheduler) {
+			return this == INTERVAL ? Flux.interval(delay, scheduler).take(2) : Mono.delay(delay, scheduler).repeat(1);
+		}
 	}
 
 	@Test
