@@ -23,6 +23,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.stream.LongStream;
 
@@ -45,6 +46,31 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class FluxWindowTimeoutTest {
+
+	@Test
+	public void timeoutDoesNotReplenishWithoutDownstreamDemand() {
+		AtomicLong requested = new AtomicLong();
+		TestPublisher<Integer> source = TestPublisher.create();
+
+		StepVerifier.withVirtualTime(() -> source.flux()
+		                                      .doOnRequest(requested::addAndGet)
+		                                      .windowTimeout(10, Duration.ofSeconds(1), true),
+				1)
+		            .expectSubscription()
+		            .expectNextCount(1)
+		            .then(() -> source.next(1))
+		            .thenAwait(Duration.ofSeconds(1))
+		            .then(() -> assertThat(requested).hasValue(10))
+		            .thenAwait(Duration.ofSeconds(1))
+		            .thenRequest(1)
+		            .expectNextCount(1)
+		            .then(() -> assertThat(requested).hasValue(10))
+		            .thenRequest(1)
+		            .expectNextCount(1)
+		            .then(() -> assertThat(requested).hasValue(11))
+		            .thenCancel()
+		            .verify();
+	}
 
 	@Test
 	public void windowTimeoutWithBackPressureFromCore() throws InterruptedException {
