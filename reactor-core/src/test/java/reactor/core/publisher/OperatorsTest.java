@@ -1011,4 +1011,22 @@ public class OperatorsTest {
 	void emptySubscriberNotScannableStepName() {
 		assertThat(Scannable.from(Operators.emptySubscriber()).stepName()).isEqualTo("UNAVAILABLE_SCAN");
 	}
+
+	@Test
+	void multiplyCapReturnsProductOrLongMaxOnOverflow() {
+		assertThat(Operators.multiplyCap(12, 3)).isEqualTo(36);
+		assertThat(Operators.multiplyCap(1L << 32, 2)).isEqualTo(1L << 33);
+		assertThat(Operators.multiplyCap(Long.MAX_VALUE, 2)).isEqualTo(Long.MAX_VALUE);
+	}
+
+	@Test
+	void discardQueueWithoutHookClearsQueue() {
+		Queue<Integer> queue = new ArrayBlockingQueue<>(3);
+		queue.add(1);
+		queue.add(2);
+
+		Operators.onDiscardQueueWithClear(queue, Context.empty(), null);
+
+		assertThat(queue).isEmpty();
+	}
 }
