@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2025 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2016-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -132,6 +132,7 @@ final class SinkManyReplayProcessor<T> extends Flux<T> implements InternalManySi
 	 * {@link Subscriber} if configured as unbounded, a limited history otherwise.
 	 */
 	static <E> SinkManyReplayProcessor<E> create(int historySize, boolean unbounded) {
+		FluxReplay.validateHistorySize(historySize, unbounded);
 		FluxReplay.ReplayBuffer<E> buffer;
 		if (unbounded) {
 			buffer = new FluxReplay.UnboundedReplayBuffer<>(historySize);
