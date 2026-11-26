@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2022 VMware Inc. or its affiliates, All Rights Reserved.
+ * Copyright (c) 2017-2026 VMware Inc. or its affiliates, All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.Scannable;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 import reactor.test.publisher.TestPublisher;
 
@@ -477,6 +479,18 @@ public class FluxFilterWhenTest {
         test.cancel();
         assertThat(test.scan(Scannable.Attr.CANCELLED)).isTrue();
     }
+
+	//see https://github.com/reactor/reactor-core/issues/4459
+	@RepeatedTest(200)
+	public void filterWhenShouldNotDropElements() {
+		StepVerifier.create(Flux.range(0, 100)
+		                        .filterWhen(i -> Mono.just(true)
+		                                             .subscribeOn(Schedulers.boundedElastic()))
+		                        .filterWhen(i -> Mono.just(true)
+		                                             .subscribeOn(Schedulers.boundedElastic())))
+		            .expectNextCount(100)
+		            .verifyComplete();
+	}
 
 	@Test
 	public void filterAllOut() {
