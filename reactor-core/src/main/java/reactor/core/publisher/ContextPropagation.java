@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Queue;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -32,6 +33,7 @@ import io.micrometer.context.ContextSnapshot;
 import io.micrometer.context.ContextSnapshotFactory;
 import io.micrometer.context.ThreadLocalAccessor;
 import org.jspecify.annotations.Nullable;
+import reactor.core.CoreSubscriber;
 import reactor.core.observability.SignalListener;
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
@@ -151,6 +153,16 @@ final class ContextPropagation {
 
 	static Context contextCaptureToEmpty() {
 		return contextCapture().apply(Context.empty());
+	}
+
+	@SuppressWarnings("try")
+	static <T> void subscribeWithThreadLocals(CoreSubscriber<? super T> actual,
+			Consumer<CoreSubscriber<? super T>> subscribe) {
+		Context context = actual.currentContext();
+		try (ContextSnapshot.Scope ignored = setThreadLocals(context)) {
+			subscribe.accept(new FluxContextWriteRestoringThreadLocals.ContextWriteRestoringThreadLocalsSubscriber<>(
+					actual, context));
+		}
 	}
 
 	/**
